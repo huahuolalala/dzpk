@@ -8,9 +8,6 @@ server/*.exe
 log/
 server/*.log
 
-# 数据库
-server/*.db
-
 # 依赖
 client/node_modules/
 client/dist/

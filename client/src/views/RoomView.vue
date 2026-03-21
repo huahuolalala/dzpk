@@ -38,7 +38,7 @@
               <div class="name">
                 {{ player.name }}
                 <span v-if="player.id === roomStore.playerId" class="me-tag">(我)</span>
-                <span v-if="player.is_ai" class="ai-tag">{{ getAILevelLabel(player.ai_level) }}</span>
+                <span v-if="player.is_ai" class="ai-tag">{{ getAILevelLabel(player.ai_level || '') }}</span>
                 <span v-if="player.ready && !player.is_ai" class="ready-tag">已准备</span>
               </div>
               <div class="chips">💰 {{ player.chips }}</div>
