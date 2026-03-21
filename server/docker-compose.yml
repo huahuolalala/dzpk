@@ -5,15 +5,16 @@ services:
     build: .
     container_name: dz-poker-server
     ports:
-      - "8080:8080"  # WebSocket 端口
-      - "8081:8081"  # HTTP 端口
+      - "8080:8080"  # WebSocket + HTTP 端口
+    volumes:
+      - ./data:/app/data  # 持久化数据库
     environment:
       - WS_PORT=8080
-      - HTTP_PORT=8081
-      - LOG_LEVEL=info
+      - DB_PATH=/app/data/dz-poker.db
+      - TZ=Asia/Shanghai
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
