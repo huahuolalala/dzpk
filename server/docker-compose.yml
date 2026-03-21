@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  poker-server:
+    build: .
+    container_name: dz-poker-server
+    ports:
+      - "8080:8080"  # WebSocket 端口
+      - "8081:8081"  # HTTP 端口
+    environment:
+      - WS_PORT=8080
+      - HTTP_PORT=8081
+      - LOG_LEVEL=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

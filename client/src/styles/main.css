@@ -1,0 +1,233 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* 基础色板 */
+  --bg-dark: #0a0e0b;
+  --bg-table: radial-gradient(ellipse at center, #153823 0%, #0a170e 100%);
+  --glass-bg: rgba(20, 30, 25, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  
+  /* 交互色板 */
+  --primary: #10b981;
+  --primary-hover: #059669;
+  --gold: #fbbf24;
+  --gold-hover: #f59e0b;
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+  --info: #3b82f6;
+  
+  /* 文本颜色 */
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dark: #1e293b;
+  
+  /* 扑克牌色 */
+  --card-bg: #ffffff;
+  --card-red: #ef4444;
+  --card-black: #1e293b;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Glassmorphism 面板基础类 */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow);
+}
+
+/* 按钮全局样式 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  user-select: none;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* 各种按钮变体 */
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  border: 1px solid var(--glass-border);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-warning {
+  background: var(--gold);
+  color: #451a03;
+  text-shadow: none;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.25);
+}
+.btn-warning:hover:not(:disabled) {
+  background: var(--gold-hover);
+  box-shadow: 0 6px 16px rgba(251, 191, 36, 0.4);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger-hover);
+}
+
+.btn-danger-outline {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  box-shadow: none;
+  text-shadow: none;
+}
+.btn-danger-outline:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* 小尺寸按钮 */
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  border-radius: 6px;
+}
+
+/* 大尺寸按钮 */
+.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+  border-radius: 12px;
+}
+
+/* 输入框 */
+.input {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  color: white;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+/* 扑克牌通用样式 */
+.playing-card {
+  width: 64px;
+  height: 90px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed var(--glass-border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.playing-card.revealed {
+  background: var(--card-bg);
+  color: var(--card-black);
+  border-color: transparent;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0,0,0,0.05);
+}
+
+.playing-card.is-red.revealed {
+  color: var(--card-red);
+}
+
+.playing-card.large {
+  width: 80px;
+  height: 112px;
+  font-size: 2rem;
+  border-radius: 10px;
+}
+
+/* 加载动画 */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 通用动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
