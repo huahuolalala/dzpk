@@ -820,6 +820,8 @@ const availableButtons = computed(() => {
     return []
   }
 
+  const chips = myGamePlayer.value?.chips || 0
+
   // 当最大下注额大于玩家手上筹码+已下筹码时，只能 All-in 或 Fold
   if (cantAffordToCall.value) {
     return ['fold', 'allin']

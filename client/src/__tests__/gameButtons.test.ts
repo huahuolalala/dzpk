@@ -22,7 +22,7 @@ interface GameButtonsState {
  * 2. 当 currentBet > myPlayer.chips + myPlayer.bet 时，只能选 All-in 或 Fold
  */
 function getAvailableButtons(state: GameButtonsState): ActionButton[] {
-  const { currentBet, myPlayer, hasAllInPlayer } = state
+  const { currentBet, myPlayer } = state
 
   // 已 fold 的玩家不能操作
   if (myPlayer.status === 'folded') {
