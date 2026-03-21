@@ -21,6 +21,15 @@ export interface GameAction {
   phase: string
 }
 
+export interface DanmakuItem {
+  id: string
+  playerId: string
+  playerName: string
+  avatar: string
+  content: string
+  createdAt: number
+}
+
 export const useGameStore = defineStore('game', () => {
   const phase = ref('')
   const pot = ref(0)
@@ -36,6 +45,7 @@ export const useGameStore = defineStore('game', () => {
   const players = ref<GamePlayer[]>([])
   const actions = ref<GameAction[]>([])
   const result = ref<any>(null)
+  const danmakuList = ref<DanmakuItem[]>([])
 
   function updateState(data: any) {
     phase.value = data.phase
@@ -113,6 +123,23 @@ export const useGameStore = defineStore('game', () => {
     return player.chips - player.initialChips
   }
 
+  // 添加弹幕
+  function addDanmaku(item: DanmakuItem) {
+    danmakuList.value.push(item)
+    // 限制最大弹幕数量
+    if (danmakuList.value.length > 20) {
+      danmakuList.value.shift()
+    }
+  }
+
+  // 移除弹幕
+  function removeDanmaku(id: string) {
+    const index = danmakuList.value.findIndex(d => d.id === id)
+    if (index !== -1) {
+      danmakuList.value.splice(index, 1)
+    }
+  }
+
   return {
     phase,
     pot,
@@ -128,11 +155,14 @@ export const useGameStore = defineStore('game', () => {
     players,
     actions,
     result,
+    danmakuList,
     updateState,
     reset,
     isMyTurn,
     setResult,
     clearResult,
     getNetChange,
+    addDanmaku,
+    removeDanmaku,
   }
 })

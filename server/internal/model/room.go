@@ -20,6 +20,10 @@ type Player struct {
 	Seat      int    `json:"seat"` // 座位号 0-8
 	Chips     int64  `json:"chips"`
 	Connected bool   `json:"connected"`
+	Ready     bool   `json:"ready"` // 是否准备
+	// AI 相关字段
+	IsAI    bool   `json:"is_ai"`    // 是否是AI
+	AILevel string `json:"ai_level"` // AI等级: easy/normal/hard
 }
 
 // RoomUpdate 房间更新消息

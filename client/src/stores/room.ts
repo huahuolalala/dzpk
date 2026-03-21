@@ -7,8 +7,12 @@ export interface PlayerInfo {
   seat: number
   chips: number
   connected: boolean
+  ready?: boolean
   status?: 'active' | 'fold' | 'all-in'
   cards?: string[]
+  // AI 相关字段
+  is_ai?: boolean
+  ai_level?: string
 }
 
 export interface RoomState {
@@ -51,6 +55,16 @@ export const useRoomStore = defineStore('room', () => {
     players.value = players.value.filter((p) => p.id !== playerId)
   }
 
+  function setPlayerReady(playerId: string, ready: boolean) {
+    const index = players.value.findIndex((p) => p.id === playerId)
+    if (index !== -1) {
+      const updatedPlayer = { ...players.value[index], ready }
+      const newPlayers = [...players.value]
+      newPlayers[index] = updatedPlayer
+      players.value = newPlayers
+    }
+  }
+
   function setStatus(s: 'idle' | 'waiting' | 'playing') {
     status.value = s
   }
@@ -75,6 +89,7 @@ export const useRoomStore = defineStore('room', () => {
     updatePlayers,
     addPlayer,
     removePlayer,
+    setPlayerReady,
     setStatus,
     reset,
     isHost,

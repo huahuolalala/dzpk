@@ -88,18 +88,18 @@ function getCardClass(card: string): string {
 
 .cards-mini {
   display: flex;
-  gap: 2px;
+  gap: 3px;
   flex-shrink: 0;
 }
 
 .mini-card {
-  width: 28px;
-  height: 36px;
+  width: 32px;
+  height: 38px;
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }

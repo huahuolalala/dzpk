@@ -57,6 +57,8 @@ const (
 	RaiseAction
 	FoldAction
 	AllInAction
+	SmallBlindAction
+	BigBlindAction
 )
 
 func (a ActionType) String() string {
@@ -69,6 +71,10 @@ func (a ActionType) String() string {
 		return "raise"
 	case FoldAction:
 		return "fold"
+	case SmallBlindAction:
+		return "small_blind"
+	case BigBlindAction:
+		return "big_blind"
 	default:
 		return "allin"
 	}
@@ -89,6 +95,7 @@ type Player struct {
 	Status    PlayerStatus
 	HoleCards []Card // 手牌
 	Bet       int64  // 本轮下注
+	TotalBet  int64  // 累计投入
 }
 
 // GameState 游戏状态
@@ -133,6 +140,7 @@ func NewGameState(players []*Player, bigBlind int64) *GameState {
 		p.Status = Active
 		p.HoleCards = nil
 		p.Bet = 0
+		p.TotalBet = 0
 	}
 
 	// 洗牌
@@ -190,10 +198,17 @@ func (g *GameState) ProcessAction(action *Action) bool {
 		if requiredToCall == 0 {
 			return false
 		}
+		// 筹码不足以支付跟注，转为 all-in
+		if player.Chips < requiredToCall {
+			action.Type = AllInAction
+			return g.processAllIn(player, playerIndex, player.Bet+player.Chips)
+		}
 		callAmount := minInt64(player.Chips, requiredToCall)
 		player.Chips -= callAmount
 		player.Bet += callAmount
+		player.TotalBet += callAmount
 		g.Pot += callAmount
+		action.Amount = callAmount // 记录跟注金额
 		if player.Chips == 0 {
 			player.Status = AllIn
 		}
@@ -203,10 +218,17 @@ func (g *GameState) ProcessAction(action *Action) bool {
 			return false
 		}
 		totalAvailable := player.Bet + player.Chips
+		minRaiseTo := g.CurrentBet + g.MinRaise
+		// 金额超出总可用筹码时，如果玩家想用全部筹码，则转为 all-in
 		if action.Amount > totalAvailable {
+			if action.Amount == totalAvailable && player.Chips > 0 {
+				// 全部跟注的情况：转为 all-in
+				action.Type = AllInAction
+				action.Amount = totalAvailable
+				return g.processAllIn(player, playerIndex, totalAvailable)
+			}
 			return false
 		}
-		minRaiseTo := g.CurrentBet + g.MinRaise
 		if action.Amount < minRaiseTo && action.Amount != totalAvailable {
 			return false
 		}
@@ -216,6 +238,7 @@ func (g *GameState) ProcessAction(action *Action) bool {
 		}
 		player.Chips -= contribution
 		player.Bet = action.Amount
+		player.TotalBet += contribution
 		g.Pot += contribution
 		if player.Chips == 0 {
 			player.Status = AllIn
@@ -233,24 +256,7 @@ func (g *GameState) ProcessAction(action *Action) bool {
 		player.Status = Folded
 		g.ActedThisRound[playerIndex] = true
 	case AllInAction:
-		if player.Chips == 0 {
-			return false
-		}
-		total := player.Bet + player.Chips
-		contribution := player.Chips
-		oldBet := g.CurrentBet
-		player.Chips = 0
-		player.Status = AllIn
-		player.Bet = total
-		g.Pot += contribution
-		if total > oldBet {
-			g.CurrentBet = total
-			g.MinRaise = maxInt64(g.MinRaise, total-oldBet)
-			g.LastAggressorIndex = playerIndex
-			g.resetActedAfterRaise(playerIndex)
-		} else {
-			g.ActedThisRound[playerIndex] = true
-		}
+		return g.processAllIn(player, playerIndex, player.Bet+player.Chips)
 	}
 
 	g.Actions = append(g.Actions, *action)
@@ -393,10 +399,58 @@ func (g *GameState) postBlind(index int, amount int64) {
 	post := minInt64(player.Chips, amount)
 	player.Chips -= post
 	player.Bet += post
+	player.TotalBet += post
 	g.Pot += post
 	if player.Chips == 0 {
 		player.Status = AllIn
 	}
+	// 记录盲注动作
+	actionType := SmallBlindAction
+	if amount == g.BigBlind {
+		actionType = BigBlindAction
+	}
+	g.Actions = append(g.Actions, Action{
+		Type:     actionType,
+		PlayerID: player.ID,
+		Amount:   post,
+	})
+}
+
+// processAllIn 处理 all-in 动作，total 是玩家本轮总下注额（Bet + Chips）
+func (g *GameState) processAllIn(player *Player, playerIndex int, total int64) bool {
+	if player.Chips == 0 {
+		return false
+	}
+	contribution := player.Chips
+	oldBet := g.CurrentBet
+	player.Chips = 0
+	player.Status = AllIn
+	player.Bet = total
+	player.TotalBet += contribution
+	g.Pot += contribution
+
+	if total > oldBet {
+		// all-in 形成加注：更新下注线，让其他玩家依次决策
+		g.CurrentBet = total
+		g.MinRaise = maxInt64(g.MinRaise, total-oldBet)
+		g.LastAggressorIndex = playerIndex
+		// 只标记 all-in 玩家已行动，不重置其他玩家的行动状态
+		g.ActedThisRound[playerIndex] = true
+	} else {
+		// all-in 金额 <= 当前下注，只需跟注
+		g.ActedThisRound[playerIndex] = true
+	}
+
+	// 记录动作
+	g.Actions = append(g.Actions, Action{
+		Type:     AllInAction,
+		PlayerID: player.ID,
+		Amount:   total,
+	})
+
+	// 推进到下一家
+	g.advanceToNextPlayer()
+	return true
 }
 
 func minInt64(a, b int64) int64 {

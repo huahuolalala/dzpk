@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"sync"
 	"time"
@@ -58,6 +59,7 @@ func (s *RoomStore) CreateRoom(host *model.Player) (*model.Room, error) {
 	s.rooms[room.ID] = room
 	s.codes[code] = room.ID
 	host.Seat = 0
+	host.Ready = true // 房主创建时默认已准备
 
 	return room, nil
 }
@@ -185,4 +187,67 @@ func (s *RoomStore) UpdateRoomPlayers(roomID string, chips map[string]int64, sta
 		room.Status = status
 	}
 	return room, true
+}
+
+// SetPlayerReady 设置玩家准备状态
+func (s *RoomStore) SetPlayerReady(roomID string, playerID string, ready bool) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	room, ok := s.rooms[roomID]
+	if !ok {
+		log.Printf("[RoomStore] SetPlayerReady: room %s not found", roomID)
+		return false
+	}
+
+	for _, p := range room.Players {
+		if p.ID == playerID {
+			log.Printf("[RoomStore] SetPlayerReady: player %s ready=%v (room %s)", playerID, ready, roomID)
+			p.Ready = ready
+			return true
+		}
+	}
+	log.Printf("[RoomStore] SetPlayerReady: player %s not found in room %s", playerID, roomID)
+	return false
+}
+
+// AllPlayersReady 检查是否所有玩家都准备了（至少2人）
+func (s *RoomStore) AllPlayersReady(roomID string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	room, ok := s.rooms[roomID]
+	if !ok {
+		log.Printf("[RoomStore] AllPlayersReady: room %s not found", roomID)
+		return false
+	}
+
+	log.Printf("[RoomStore] AllPlayersReady: room %s has %d players", roomID, len(room.Players))
+	for _, p := range room.Players {
+		log.Printf("[RoomStore] AllPlayersReady:   player id=%s name=%s ready=%v", p.ID, p.Name, p.Ready)
+		if !p.Ready {
+			return false
+		}
+	}
+	if len(room.Players) < 2 {
+		log.Printf("[RoomStore] AllPlayersReady: room %s needs 2 players", roomID)
+		return false
+	}
+	log.Printf("[RoomStore] AllPlayersReady: room %s all ready!", roomID)
+	return true
+}
+
+// ResetAllPlayersReady 重置所有玩家准备状态
+func (s *RoomStore) ResetAllPlayersReady(roomID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	room, ok := s.rooms[roomID]
+	if !ok {
+		return
+	}
+
+	for _, p := range room.Players {
+		p.Ready = false
+	}
 }

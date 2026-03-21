@@ -9,6 +9,7 @@ type Config struct {
 	HTTPPort string
 	WSPort   string
 	LogLevel string
+	DBPath   string
 }
 
 func Load() *Config {
@@ -16,6 +17,7 @@ func Load() *Config {
 		HTTPPort: getEnv("HTTP_PORT", "8081"),
 		WSPort:   getEnv("WS_PORT", "8080"),
 		LogLevel: getEnv("LOG_LEVEL", "info"),
+		DBPath:   getEnv("DB_PATH", "./dz-poker.db"),
 	}
 }
 

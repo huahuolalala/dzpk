@@ -1,10 +1,15 @@
 # 编译产物
 server/main
+server/server
 server/server_test
 server/*.exe
 
 # 日志
 log/
+server/*.log
+
+# 数据库
+server/*.db
 
 # 依赖
 client/node_modules/

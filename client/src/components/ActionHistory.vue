@@ -56,6 +56,8 @@ function translateAction(action: string): string {
     'raise': '加注',
     'fold': '弃牌',
     'allin': 'All-in',
+    'small_blind': '小盲',
+    'big_blind': '大盲',
   }
   return map[action] || action
 }
@@ -78,6 +80,8 @@ function getActionClass(action: string): string {
     'raise': 'action-raise',
     'fold': 'action-fold',
     'allin': 'action-allin',
+    'small_blind': 'action-small_blind',
+    'big_blind': 'action-big_blind',
   }
   return map[action] || ''
 }
@@ -195,6 +199,12 @@ function getActionClass(action: string): string {
 .history-item.action-allin {
   border-left-color: #ef4444;
   background: rgba(239, 68, 68, 0.1);
+}
+
+.history-item.action-small_blind,
+.history-item.action-big_blind {
+  border-left-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
 }
 
 .action-header {

@@ -188,6 +188,38 @@ body {
   color: transparent;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+/* 3D翻转动画 */
+.playing-card.flipping {
+  animation: card-flip 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes card-flip {
+  0% {
+    transform: rotateY(0deg) scale(1);
+  }
+  50% {
+    transform: rotateY(90deg) scale(1.1);
+  }
+  100% {
+    transform: rotateY(180deg) scale(1);
+  }
+}
+
+/* 牌背样式 */
+.playing-card::before {
+  content: '🂠';
+  position: absolute;
+  font-size: 2.5rem;
+  color: rgba(255, 255, 255, 0.15);
+  backface-visibility: hidden;
+}
+
+.playing-card.revealed::before {
+  content: '';
 }
 
 .playing-card.revealed {
@@ -195,10 +227,49 @@ body {
   color: var(--card-black);
   border-color: transparent;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0,0,0,0.05);
+  transform: rotateY(180deg);
+}
+
+.playing-card.revealed .card-inner {
+  transform: rotateY(180deg);
+}
+
+/* 我的手牌不需要旋转 */
+.playing-card.hole-card {
+  transform: none !important;
+}
+
+.playing-card.hole-card .card-inner {
+  transform: none !important;
+}
+
+/* 高亮样式 - 用于最佳牌型组合 */
+.playing-card.hole-card.is-highlight {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.8), 0 0 40px rgba(16, 185, 129, 0.4), inset 0 0 0 3px rgba(16, 185, 129, 1);
+  transform: none !important;
+}
+
+.playing-card.hole-card.is-highlight .card-inner {
+  transform: none !important;
+}
+
+/* 公共牌高亮 */
+.community-cards .playing-card.is-highlight {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.9), 0 0 40px rgba(16, 185, 129, 0.5), inset 0 0 0 3px rgba(16, 185, 129, 1);
+  transform: rotateY(180deg) translateY(-5px) scale(1.05) !important;
 }
 
 .playing-card.is-red.revealed {
   color: var(--card-red);
+}
+
+/* 公共牌间距 */
+.community-cards .playing-card {
+  margin: 0 0.25rem;
+}
+
+.community-cards .playing-card.revealed {
+  transform: rotateY(180deg);
 }
 
 .playing-card.large {
@@ -206,6 +277,48 @@ body {
   height: 112px;
   font-size: 2rem;
   border-radius: 10px;
+}
+
+/* 翻牌时的弹跳效果 */
+.playing-card.reveal-bounce {
+  animation: reveal-bounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s both;
+}
+
+@keyframes reveal-bounce {
+  0% {
+    transform: rotateY(180deg) scale(0.8) translateY(20px);
+    opacity: 0.5;
+  }
+  60% {
+    transform: rotateY(180deg) scale(1.1) translateY(-5px);
+  }
+  100% {
+    transform: rotateY(180deg) scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 高亮牌的光晕效果 */
+.playing-card.is-highlight {
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.9), 0 0 40px rgba(251, 191, 36, 0.5), inset 0 0 0 3px rgba(251, 191, 36, 1);
+  transform: rotateY(180deg) translateY(-8px) scale(1.05);
+  z-index: 10;
+}
+
+/* 发牌时的入场动画 */
+.playing-card.dealing {
+  animation: deal-card 0.3s ease-out forwards;
+}
+
+@keyframes deal-card {
+  0% {
+    transform: translateY(-100px) rotate(-20deg) scale(0.5);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
 }
 
 /* 加载动画 */

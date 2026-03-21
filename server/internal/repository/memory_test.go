@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/dz-poker/server/internal/model"
@@ -153,5 +154,36 @@ func TestRoomStore_MaxSeats(t *testing.T) {
 
 	if room.MaxSeats != 9 {
 		t.Errorf("MaxSeats should be 9, got %d", room.MaxSeats)
+	}
+}
+
+func TestRoomStore_ConcurrentAddPlayers(t *testing.T) {
+	store := NewRoomStore()
+	host := &model.Player{ID: "h1", Name: "Host"}
+	room, _ := store.CreateRoom(host)
+
+	var wg sync.WaitGroup
+	errs := make(chan error, 8)
+
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			player := &model.Player{ID: string(rune('a' + idx)), Name: "Player"}
+			if err := store.AddPlayer(room.ID, player); err != nil {
+				errs <- err
+			}
+		}(i)
+	}
+
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		t.Fatalf("AddPlayer failed: %v", err)
+	}
+
+	if len(room.Players) != 9 {
+		t.Fatalf("Should have 9 players, got %d", len(room.Players))
 	}
 }

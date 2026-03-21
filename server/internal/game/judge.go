@@ -1,5 +1,7 @@
 package game
 
+import "sort"
+
 // HandRank 牌型大小
 type HandRank int
 
@@ -64,7 +66,7 @@ func (r HandResult) Beats(other HandResult) bool {
 // EvaluateHand 判断手牌牌型，返回完整结果
 func EvaluateHand(cards []Card) HandResult {
 	if len(cards) < 5 {
-		return HandResult{Rank: HighCard, AllCards: cards}
+		return HandResult{Rank: HighCard, AllCards: copyCards(cards)}
 	}
 
 	// 复制并按点数排序（从大到小）
@@ -80,14 +82,13 @@ func EvaluateHand(cards []Card) HandResult {
 
 	// 同花顺
 	if isFlush && isStraight {
-		result := HandResult{AllCards: cards[:5]}
+		result := HandResult{AllCards: copyCards(cards)}
 		if straightHighCard == Ace {
 			result.Rank = RoyalFlush
-			result.RankCards = cards[:5]
 		} else {
 			result.Rank = StraightFlush
-			result.RankCards = cards[:5]
 		}
+		result.RankCards = straightRankCards(sorted, straightHighCard)
 		return result
 	}
 
@@ -106,7 +107,7 @@ func EvaluateHand(cards []Card) HandResult {
 	}
 	bubbleSortDescWithRanks(counts, rankList)
 
-	result := HandResult{AllCards: cards[:5]}
+	result := HandResult{AllCards: copyCards(cards)}
 
 	if counts[0] == 4 {
 		result.Rank = FourOfAKind
@@ -145,12 +146,12 @@ func EvaluateHand(cards []Card) HandResult {
 	}
 	if isFlush {
 		result.Rank = Flush
-		result.RankCards = cards[:5]
+		result.RankCards = copyCards(sorted)
 		return result
 	}
 	if isStraight {
 		result.Rank = Straight
-		result.RankCards = cards[:5]
+		result.RankCards = straightRankCards(sorted, straightHighCard)
 		return result
 	}
 	if counts[0] == 3 {
@@ -224,7 +225,7 @@ func EvaluateHand(cards []Card) HandResult {
 		return result
 	}
 	result.Rank = HighCard
-	result.RankCards = cards[:5]
+	result.RankCards = copyCards(sorted)
 	return result
 }
 
@@ -242,6 +243,7 @@ func EvaluateBestHand(player *Player, community []Card) *HandResult {
 
 	// 找出所有5张牌的组合
 	var best HandResult
+	hasBest := false
 	combinations := getCombinations(len(allCards), 5)
 	for _, combo := range combinations {
 		cards := make([]Card, 5)
@@ -249,12 +251,10 @@ func EvaluateBestHand(player *Player, community []Card) *HandResult {
 			cards[i] = allCards[idx]
 		}
 		result := EvaluateHand(cards)
-		if result.Rank > best.Rank {
+		if !hasBest || result.Rank > best.Rank || (result.Rank == best.Rank && result.Beats(best)) {
 			best = result
-			best.AllCards = cards
-		} else if result.Rank == best.Rank && result.Beats(best) {
-			best = result
-			best.AllCards = cards
+			best.AllCards = copyCards(cards)
+			hasBest = true
 		}
 	}
 	return &best
@@ -263,6 +263,107 @@ func EvaluateBestHand(player *Player, community []Card) *HandResult {
 // JudgeHand 判断手牌牌型（兼容旧接口）
 func JudgeHand(cards []Card) HandRank {
 	return EvaluateHand(cards).Rank
+}
+
+// BestHandHighlightCards 返回用于高亮展示的牌（只包含牌型主体，不含边牌）
+func BestHandHighlightCards(res HandResult) []Card {
+	if len(res.AllCards) == 0 {
+		return nil
+	}
+
+	switch res.Rank {
+	case RoyalFlush, StraightFlush, Straight, Flush, FullHouse:
+		return copyCards(res.AllCards)
+	case FourOfAKind:
+		return pickCardsByRanks(res.AllCards, topRanksByCount(res.AllCards, 4, 1))
+	case ThreeOfAKind:
+		return pickCardsByRanks(res.AllCards, topRanksByCount(res.AllCards, 3, 1))
+	case TwoPair:
+		return pickCardsByRanks(res.AllCards, topRanksByCount(res.AllCards, 2, 2))
+	case OnePair:
+		return pickCardsByRanks(res.AllCards, topRanksByCount(res.AllCards, 2, 1))
+	case HighCard:
+		sorted := copyCards(res.AllCards)
+		sortByRankDesc(sorted)
+		if len(sorted) > 0 {
+			return []Card{sorted[0]}
+		}
+		return nil
+	default:
+		return copyCards(res.AllCards)
+	}
+}
+
+func copyCards(cards []Card) []Card {
+	if len(cards) == 0 {
+		return nil
+	}
+	dup := make([]Card, len(cards))
+	copy(dup, cards)
+	return dup
+}
+
+func straightRankCards(sorted []Card, straightHighCard Rank) []Card {
+	if len(sorted) == 0 {
+		return nil
+	}
+	if straightHighCard != Five {
+		return copyCards(sorted)
+	}
+	order := []Rank{Five, Four, Three, Deuce, Ace}
+	result := make([]Card, 0, len(order))
+	for _, r := range order {
+		for _, c := range sorted {
+			if c.Rank == r {
+				result = append(result, c)
+				break
+			}
+		}
+	}
+	return result
+}
+
+func topRanksByCount(cards []Card, count int, limit int) []Rank {
+	counts := make(map[Rank]int)
+	for _, c := range cards {
+		counts[c.Rank]++
+	}
+
+	ranks := make([]Rank, 0, len(counts))
+	for r, c := range counts {
+		if c == count {
+			ranks = append(ranks, r)
+		}
+	}
+	if len(ranks) == 0 {
+		return nil
+	}
+	if len(ranks) > 1 {
+		sort.Slice(ranks, func(i, j int) bool {
+			return ranks[i] > ranks[j]
+		})
+	}
+	if limit > 0 && len(ranks) > limit {
+		ranks = ranks[:limit]
+	}
+	return ranks
+}
+
+func pickCardsByRanks(cards []Card, ranks []Rank) []Card {
+	if len(cards) == 0 || len(ranks) == 0 {
+		return nil
+	}
+	set := make(map[Rank]struct{}, len(ranks))
+	for _, r := range ranks {
+		set[r] = struct{}{}
+	}
+	result := make([]Card, 0, len(cards))
+	for _, c := range cards {
+		if _, ok := set[c.Rank]; ok {
+			result = append(result, c)
+		}
+	}
+	return result
 }
 
 func isFlush(cards []Card) bool {
@@ -276,15 +377,43 @@ func isFlush(cards []Card) bool {
 }
 
 func isStraight(cards []Card) (bool, Rank) {
-	// 检查普通顺子 A-K-Q-J-10 到 5-4-3-2-A
-	if cards[0].Rank-cards[4].Rank == 4 {
-		return true, cards[0].Rank
+	// 提取不重复的点数并排序（从大到小）
+	uniqueRanks := make([]Rank, 0, 5)
+	seen := make(map[Rank]bool)
+	for _, c := range cards {
+		if !seen[c.Rank] {
+			uniqueRanks = append(uniqueRanks, c.Rank)
+			seen[c.Rank] = true
+		}
 	}
-	// 检查 A-2-3-4-5 顺子
-	if cards[0].Rank == Ace && cards[1].Rank == Five && cards[2].Rank == Four &&
-		cards[3].Rank == Three && cards[4].Rank == Deuce {
-		return true, Five // A-2-3-4-5 的高牌是5
+	if len(uniqueRanks) < 5 {
+		return false, 0
 	}
+	sort.Slice(uniqueRanks, func(i, j int) bool {
+		return uniqueRanks[i] > uniqueRanks[j]
+	})
+
+	// 检查 A-2-3-4-5 顺子（wheel）
+	if uniqueRanks[0] == Ace && uniqueRanks[1] == Five && uniqueRanks[2] == Four &&
+		uniqueRanks[3] == Three && uniqueRanks[4] == Deuce {
+		return true, Five
+	}
+
+	// 检查普通顺子：5张牌必须恰好相差4（即连续）
+	if uniqueRanks[0]-uniqueRanks[4] == 4 {
+		// 进一步验证确实是连续的
+		isConsecutive := true
+		for i := 0; i < 4; i++ {
+			if uniqueRanks[i]-uniqueRanks[i+1] != 1 {
+				isConsecutive = false
+				break
+			}
+		}
+		if isConsecutive {
+			return true, uniqueRanks[0]
+		}
+	}
+
 	return false, 0
 }
 
@@ -311,7 +440,7 @@ func bubbleSortDesc(arr []int) {
 func bubbleSortDescWithRanks(counts []int, ranks []Rank) {
 	for i := 0; i < len(counts); i++ {
 		for j := i + 1; j < len(counts); j++ {
-			if counts[i] < counts[j] {
+			if counts[i] < counts[j] || (counts[i] == counts[j] && ranks[i] < ranks[j]) {
 				counts[i], counts[j] = counts[j], counts[i]
 				ranks[i], ranks[j] = ranks[j], ranks[i]
 			}
