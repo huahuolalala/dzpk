@@ -24,3 +24,7 @@ client/src-tauri/target/
 *.o
 *.a
 *.so
+
+# 文档
+*.md
+!README.md
