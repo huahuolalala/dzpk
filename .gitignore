@@ -1,0 +1,26 @@
+# 编译产物
+server/main
+server/server_test
+server/*.exe
+
+# 日志
+log/
+
+# 依赖
+client/node_modules/
+client/dist/
+client/src-tauri/target/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# 构建
+*.o
+*.a
+*.so
