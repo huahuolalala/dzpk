@@ -310,10 +310,10 @@ func (h *Hub) HandleJoinRoom(c *Client, data interface{}) {
 	}
 	c.sendMessage(model.MsgRoomUpdate, resp)
 
-	// 广播给房间内其他玩家
+	// 广播给房间内其他玩家 - 包含完整 players 列表
 	h.broadcastToRoom(room.ID, model.MsgRoomUpdate, map[string]interface{}{
-		"action": "player_joined",
-		"player": players[len(players)-1],
+		"action":  "player_joined",
+		"players": players,
 	}, c.ID)
 }
 
@@ -387,6 +387,14 @@ func (h *Hub) HandleStartGame(c *Client, data interface{}) {
 
 	// 初始化游戏
 	gs := game.NewGameState(gamePlayers, 100)
+
+	// 记录每个玩家的初始筹码（扣除大小盲之前）
+	initialChips := make(map[string]int64)
+	for i, p := range room.Players {
+		initialChips[p.ID] = gamePlayers[i].Chips + gs.Players[i].Chips
+	}
+	gs.InitialChips = initialChips
+
 	h.games[c.RoomID] = gs
 
 	// 广播游戏状态
@@ -487,13 +495,14 @@ func (h *Hub) broadcastGameState(roomID string) {
 			cards[j] = c.String()
 		}
 		players[i] = map[string]interface{}{
-			"id":     p.ID,
-			"name":   p.Name,
-			"seat":   i,
-			"chips":  p.Chips,
-			"bet":    p.Bet,
-			"status": p.Status.String(),
-			"cards":  cards,
+			"id":            p.ID,
+			"name":          p.Name,
+			"seat":          i,
+			"chips":         p.Chips,
+			"initial_chips": gs.InitialChips[p.ID],
+			"bet":           p.Bet,
+			"status":        p.Status.String(),
+			"cards":         cards,
 		}
 	}
 
@@ -540,6 +549,25 @@ func (h *Hub) broadcastGameState(roomID string) {
 			}
 		}
 	}
+
+	// 添加操作历史
+	actions := make([]map[string]interface{}, len(gs.Actions))
+	for i, a := range gs.Actions {
+		playerName := ""
+		for _, p := range gs.Players {
+			if p.ID == a.PlayerID {
+				playerName = p.Name
+				break
+			}
+		}
+		actions[i] = map[string]interface{}{
+			"player_name": playerName,
+			"action":      a.Type.String(),
+			"amount":      a.Amount,
+			"phase":       gs.Phase.String(),
+		}
+	}
+	state["actions"] = actions
 
 	h.broadcastToRoom(roomID, model.MsgGameState, state, "")
 }

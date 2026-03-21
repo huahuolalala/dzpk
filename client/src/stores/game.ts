@@ -14,6 +14,13 @@ export interface GamePlayer {
   best_hand_cards?: string[]
 }
 
+export interface GameAction {
+  player_name: string
+  action: string
+  amount: number
+  phase: string
+}
+
 export const useGameStore = defineStore('game', () => {
   const phase = ref('')
   const pot = ref(0)
@@ -27,6 +34,7 @@ export const useGameStore = defineStore('game', () => {
   const smallBlindIndex = ref(0)
   const bigBlindIndex = ref(0)
   const players = ref<GamePlayer[]>([])
+  const actions = ref<GameAction[]>([])
   const result = ref<any>(null)
 
   function updateState(data: any) {
@@ -45,7 +53,8 @@ export const useGameStore = defineStore('game', () => {
     if (data.players) {
       players.value = data.players.map((p: any) => {
         const existingPlayer = players.value.find(ep => ep.id === p.id)
-        const initialChips = existingPlayer?.initialChips ?? p.chips
+        // 优先使用服务端下发的 initial_chips，其次使用已有值，最后才用当前 chips
+        const initialChips = p.initial_chips ?? existingPlayer?.initialChips ?? p.chips
 
         return {
           id: p.id,
@@ -60,6 +69,11 @@ export const useGameStore = defineStore('game', () => {
           best_hand_cards: p.best_hand_cards || [],
         }
       })
+    }
+
+    // 更新操作历史
+    if (data.actions) {
+      actions.value = data.actions
     }
   }
 
@@ -76,6 +90,7 @@ export const useGameStore = defineStore('game', () => {
     smallBlindIndex.value = 0
     bigBlindIndex.value = 0
     players.value = []
+    actions.value = []
     result.value = null
   }
 
@@ -111,6 +126,7 @@ export const useGameStore = defineStore('game', () => {
     smallBlindIndex,
     bigBlindIndex,
     players,
+    actions,
     result,
     updateState,
     reset,

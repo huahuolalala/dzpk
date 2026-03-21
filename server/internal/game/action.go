@@ -110,6 +110,7 @@ type GameState struct {
 	ActedThisRound     []bool
 	Deck               *Deck
 	Actions            []Action
+	InitialChips       map[string]int64 // 玩家初始筹码（游戏开始前）
 }
 
 func NewGameState(players []*Player, bigBlind int64) *GameState {

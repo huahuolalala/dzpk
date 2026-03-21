@@ -1,5 +1,8 @@
 <template>
   <div class="game-container">
+    <!-- 操作历史面板 -->
+    <ActionHistory />
+
     <!-- 顶部状态栏 -->
     <header class="game-header glass-panel">
       <div class="header-left">
@@ -275,6 +278,7 @@ import { useRoomStore } from '../stores/room'
 import { useGameStore } from '../stores/game'
 import { useWebSocket } from '../composables/useWebSocket'
 import HandRankShowcase from '../components/HandRankShowcase.vue'
+import ActionHistory from '../components/ActionHistory.vue'
 
 const router = useRouter()
 const roomStore = useRoomStore()

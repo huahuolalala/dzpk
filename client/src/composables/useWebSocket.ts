@@ -1,8 +1,12 @@
-import { ref, onUnmounted } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRoomStore } from '../stores/room'
 import { useGameStore } from '../stores/game'
 import { useServerStore } from '../stores/server'
+
+// 单例模式 - 整个应用共享一个 WebSocket 实例
+let ws: WebSocket | null = null
+let instanceCount = 0
 
 export function useWebSocket() {
   const connected = ref(false)
@@ -12,37 +16,43 @@ export function useWebSocket() {
   const serverStore = useServerStore()
   const router = useRouter()
 
-  let ws: WebSocket | null = null
-  let instanceCount = 0
   instanceCount++
 
-  function connect() {
-    const wsUrl = serverStore.getWsUrl()
-    console.log('[WS] Connecting to', wsUrl)
+  // 监听服务器地址变化，重连
+  watch(() => serverStore.serverAddress, () => {
+    if (connected.value) {
+      disconnect()
+      connect()
+    }
+  })
 
+  function connect() {
     if (ws && ws.readyState === WebSocket.OPEN) {
       connected.value = true
       return
     }
 
-    // 如果已有连接但正在关闭，先关闭
     if (ws) {
       ws.close()
       ws = null
     }
 
+    const wsUrl = serverStore.getWsUrl()
+    console.log('[WS] Connecting to', wsUrl)
+
     try {
       ws = new WebSocket(wsUrl)
-      console.log('[WS] WebSocket created')
 
       ws.onopen = () => {
         connected.value = true
         error.value = ''
+        console.log('[WS] Connected')
       }
 
       ws.onclose = () => {
         connected.value = false
         ws = null
+        console.log('[WS] Disconnected')
       }
 
       ws.onerror = (e) => {
@@ -61,6 +71,8 @@ export function useWebSocket() {
   function handleMessage(data: string) {
     try {
       const msg = JSON.parse(data)
+      console.log('[WS] Received:', msg.type, msg.data)
+
       switch (msg.type) {
         case 'room_update':
           handleRoomUpdate(msg.data)
@@ -103,28 +115,33 @@ export function useWebSocket() {
   }
 
   function handleRoomUpdate(data: any) {
+    console.log('[WS] room_update:', data)
     if (data.room_code) {
+      // 新建房间或加入房间时
       roomStore.setRoom({
         roomCode: data.room_code,
         playerId: data.player_id,
         hostId: data.host_id,
         players: data.players,
       })
-    } else if (data.action === 'player_joined' && data.player) {
-      roomStore.addPlayer(data.player)
+    } else if (data.action === 'player_joined' && data.players) {
+      // 有人加入房间 - 更新完整玩家列表
+      roomStore.updatePlayers(data.players)
+      console.log('[WS] Player joined, total players:', data.players.length)
     } else if (data.action === 'player_left' && data.player_id) {
       roomStore.removePlayer(data.player_id)
+      console.log('[WS] Player left:', data.player_id)
     }
   }
 
   function send(type: string, data: object) {
-    console.log('[WS] Sending:', type, data)
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       error.value = '未连接到服务器'
       throw new Error('WebSocket not connected')
     }
     const message = JSON.stringify({ type, data })
     ws.send(message)
+    console.log('[WS] Sent:', type, data)
   }
 
   async function createRoom(playerName: string) {
@@ -162,6 +179,7 @@ export function useWebSocket() {
 
   onUnmounted(() => {
     instanceCount--
+    // 只有当所有实例都卸载时才关闭连接
     if (instanceCount === 0) {
       disconnect()
     }
