@@ -9,6 +9,7 @@ services:
     volumes:
       - ./data:/app/data  # 持久化数据库
     environment:
+      - GIN_MODE=release
       - WS_PORT=8080
       - DB_PATH=/app/data/dz-poker.db
       - TZ=Asia/Shanghai
