@@ -9,9 +9,6 @@ ENV GOPROXY=https://goproxy.cn,direct
 # 设置 Alpine 镜像源加速
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
-# 安装构建依赖 (sqlite3 需要 CGO)
-RUN apk add --no-cache gcc musl-dev sqlite-dev
-
 WORKDIR /build
 
 # 复制 go.mod 和 go.sum 先下载依赖（利用缓存）
@@ -21,8 +18,8 @@ RUN go mod download
 # 复制源代码
 COPY . .
 
-# 构建 (启用 CGO)
-RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-s -w" -o server ./cmd/server
+# 构建 (禁用 CGO，纯 Go 编译)
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o server ./cmd/server
 
 # 阶段2: 运行
 FROM alpine:3.19
@@ -31,7 +28,7 @@ FROM alpine:3.19
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
 # 安装运行时依赖
-RUN apk add --no-cache ca-certificates sqlite-libs tzdata
+RUN apk add --no-cache ca-certificates tzdata
 
 # 设置时区
 ENV TZ=Asia/Shanghai
