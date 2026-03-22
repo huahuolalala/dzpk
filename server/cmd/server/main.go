@@ -46,8 +46,19 @@ func main() {
 	r.Use(gin.Recovery())
 
 	// CORS 配置
+	allowOrigins := []string{
+		"http://localhost:1420",
+		"http://127.0.0.1:1420",
+		"http://localhost:1421",
+		"http://127.0.0.1:1421",
+	}
+	// 生产环境添加部署地址
+	if os.Getenv("GIN_MODE") == "release" {
+		allowOrigins = append(allowOrigins, "http://8.145.38.16:8088")
+	}
+
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:1420", "http://127.0.0.1:1420", "http://localhost:1421", "http://127.0.0.1:1421"},
+		AllowOrigins:     allowOrigins,
 		AllowMethods:    []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:    []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:   []string{"Content-Length"},

@@ -6,4 +6,6 @@ services:
     container_name: dz-poker-web
     ports:
       - "8088:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
