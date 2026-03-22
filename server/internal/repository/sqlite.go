@@ -12,7 +12,7 @@ var DB *sql.DB
 // InitDB initializes SQLite database and runs migrations
 func InitDB(dbPath string) error {
 	var err error
-	DB, err = sql.Open("sqlite3", dbPath)
+	DB, err = sql.Open("sqlite", dbPath)
 	if err != nil {
 		return err
 	}
